@@ -7,7 +7,7 @@ A pragmatic to-the-point guide for implementing DDD in C#.
 Domain-Driven Design (also known as DDD) is a lot more than just writing code. This guide expects you to already know about the DDD process, and have reached the point of starting to implement software using DDD.
 If you don't yet know about the process I highly recommend relying on the books on the topic, rather than a brief guide like this. It's a rather large topic after all.
 
-# Vocabulary
+# DDD Vocabulary
 
 ## Aggregate
 
@@ -18,7 +18,7 @@ class Order // Is its own root
 {
 	public OrderId Id { get; private set; } // Part of the root
 	public OrderDetails Details { get; private set; } // Part of the root
-	public IList<OrderLine> OrderLines { get; private set; } // 0-n other aggregates
+	public IList<Orderline> Orderlines { get; private set; } // 0-n other aggregates
 }
 ```
 
@@ -28,11 +28,11 @@ You could split the root from the `Aggregate` like this instead, but I don't rec
 class OrderAggregate // Has nested root
 {
 	public Order Root { get; private set; } // Root as a whole
-	public IList<OrderLine> OrderLines { get; private set; } // 0-n other aggregates
+	public IList<Orderline> Orderlines { get; private set; } // 0-n other aggregates
 }
 ```
 
-Furthermore an `Aggregate` is responsible for maintaining its own business rules and state. As such all data should be privately set, so mutations only can occur via methods on the `Aggregate` that in turn maintains business rules and a valid state.
+Furthermore an `Aggregate` is responsible for maintaining its own business rules and state. As such all data should be privately set, so mutations only occur via methods on the `Aggregate` that in turn maintains business rules and a valid state.
 To ensure a valid state, the method should validate ALL incoming data before mutating anything. e.g.
 
 ```
@@ -47,6 +47,13 @@ class Order
 		ValidateDetails(details);
 
 		return new Order { Id = id, Details = details };
+	}
+
+	public Order UpdateDetails(OrderDetails newDetails)
+	{
+		ValidateDetails(newDetails);
+
+		this.Details = newDetails;
 	}
 }
 ```
@@ -76,6 +83,8 @@ class Order
 Notice how an `Aggregate` always has an `Aggregate root` and _may_ also have other aggregates. Since an `Aggregate root` _is_ an `Entity` you can simplify the language around these concepts if you merged the root into the `Aggregate` itself like suggested above.
 This essentially means you completely ignore the term `Entity` and just call all of it an `Aggregate`. This is very much subject for debate, but I find it eases the communication in a team and I haven't really missed the `Entity` term. The primary thing here is probably making a choice and sticking to it, to avoid confusion in your teams.
 
+To remember: Just call it an `Aggregate` ;-)
+
 ## Value Object
 
 A `Value Object` is pretty much an `Entity` without a specified identity. It is data that as a whole describes a concept, and it can consist of `1-n` data points. A couple of examples:
@@ -100,4 +109,165 @@ Any business rules regarding value objects should be implemented on the `Value O
 
 Food for thought: Should `Latitude` and `Longitude` each be their own `Value Objects` with their own rules for ensure a valid value, which are then further encapsulated into `Location`? YMMV here, but I'd actually say "yes".
 
-To remember: Use fine granularity with `Value Objects` to gain the most benefit from them.
+To remember: Use fine granularity with `Value Objects` to gain the most benefit from them. And like `Aggregate` they should maintain a valid state at all times.
+
+# CQRS vocabulary
+
+We'll be talking `Command-Query Request Segregation` (CQRS) soon as it works very well with DDD.
+
+## Command
+
+A command changes something on one or many `Aggregates`, it either doesn't return anything or just returns whatever `Aggregate(s)` it was issued on.
+This is purely a `Write` operation.
+When using `Mediator` (which I recommend), there must be exactly one `Handler` that deals with the `Command`.
+
+## Query
+
+A query finds something, it could be one or many `Aggregates`, `ValueObjects`, etc. It never changes anything.
+This is purely a `Read` operation.
+When using `Mediator` (which I recommend), there must be exactly one `Handler` that deals with the `Query`.
+
+## Notification
+
+A notification is a broadcasted information, sent in a "to-whom-it-many-concern" fashion. This is really neither a `Read` nor `Write` operation, but it can lead to both depending on how any `Handlers` choose to deal with it.
+When using `Mediator` (which I recommend), there can be `0-n handlers` for notifications.
+
+# Architecture
+
+I like to match DDD with the `CQRS` pattern, as I find the commands make for excellent mutation methods on your `Aggregates`.
+To this end I'd recommend using `Mediator` for implementing `CQRS`, it's great at it and it makes for a very `SOLID` architecture with very low coupling.
+
+Furthermore I'd also suggest implenting the `Onion architecture` in your solution, as this keeps responsibilities clearly seperated between your `Domain` code (where all the business takes place), your `Application` (could be a Web API for instance) and your `Infrastructure` (which often just boils down to persistence).
+
+So our basic architecture has 3 projects:
+
+- Application
+- Domain
+- Infrastructure
+
+If you're dealing with a broad `Domain` consisting of many sub-domains, feel free to create multiples of both `Domain` and corresponding `Infrastructure` projects. Your `Application` should probably be just one, as if you're doing `Microservices`, you should ideally have multiple separate solutions instead.
+
+## Domain architecture
+
+This is really where the bulk of your DDD architecture work takes place, so we'll start here. I tend to group my code into namespaces (and directories) by "sub" domain. This is not to be confused with a `Sub-domain` from the DDD process, but rather a small subset of aggregates that, when combined, cover a specic part of your `Domain`. For instance you might be dealing with `Orders` and `Orderlines`, both of which are used for dealing with some sort of sale. They would make a fine "sub" domain namespace:
+
+- Domain
+  - Sale
+
+Now for the actual structure of the `Sale` namespace I suggest the following (feel free to omit any that aren't relevant for your particular namespace):
+
+- Domain
+  - Sale
+    - Aggregates
+    - Commands
+    - Queries
+    - Repositories
+    - ValueObjects
+
+Supposing we're doing basic CRUD for `Order` and `Orderline` (and keeping the two as separate `Aggregates` - see below why), the final structure could look like this:
+
+- Domain
+  - Sale
+    - Aggregates
+      - Order.cs
+      - Orderline.cs
+    - Commands
+      - Order
+        - OrderCommandHandler.cs
+        - OrderCreateCommand.cs
+        - OrderDeleteCommand.cs
+        - OrderUpdateCommand.cs
+      - Orderline
+        - OrderlineCommandHandler.cs
+        - OrderlineCreateCommand.cs
+        - OrderlineDeleteCommand.cs
+        - OrderlineUpdateCommand.cs
+    - Queries
+      - Order
+        - OrderGetAllQuery.cs
+        - OrderGetSingleQuery.cs
+      - Orderline
+        - OrderlineGetAllQuery.cs
+        - OrderlineGetSingleQuery.cs
+    - Repositories
+      - IOrderRepository.cs // Interface
+      - IOrderlineRepository.cs // Interface
+    - ValueObjects
+      - OrderDetails.cs
+      - OrderId.cs
+      - OrderlineId.cs
+
+Note: You'll rarely have just an `UpdateCommand`, rather you'd have specific mutational commands that adhere to the product specific workflows. It could be a `ShipOrderCommand`, `RefundOrderCommand` etc.
+
+Note: The repositories are `interfaces`, it's the `Infrastructure` project that's in charge of their actual implementations as per the `Onion architecture`.
+
+## Inter-domain communication
+
+Whilst the above does introduce repositories, I strongly advise against using these when communicating across boundaries. Rather only the relevant `Command/QueryHandler` should know about the corresponding `Repository`.
+Instead use `Commands/Queries` for communication across boundaries. This creates a very low coupling AND ensures the same contract is being used, regardless of where the communication starts.
+This is also called `East-West communication` and is actually a fine way to handle boundary-crossing concerns.
+
+In fact when using `Mediator` the same approach can be used even when crossing `Domains` (assuming you have more than one `Domain` project in your solution). One caveat with this though, is the `Command/Query` definition should be put into a `SharedKernel` project instead of residing in either of the two `Domain` projects. This way neither `Domain` will depend on the other, but rather they'll both depend on a very _slim_ `SharedKernel`. (Slim being the keyword here, a bloated `SharedKernel` is never desirable)
+
+## Domain-Infrastructure communication
+
+This one is pretty simple: Your `Infrastructure` _NEVER_ calls your `Domain`. Period.
+If you find the need to do this, you've put business logic into your `Infrastructure`, which should instead be dealt with in your `Domain`. (where inter-domain communication is allowed as just discussed)
+This is also known as `North-South communication` and it's basically meant to be a one-way street.
+If you still want to do this, know that it can lead to circular loops in both your dependencies and your logic. Neither is something you want... Ever.
+
+# Implementation details
+
+## Aggregate
+
+I tend to _not_ include the `0-n other aggregates` on an aggregate. The reason is fairly simple: It complicates persistance and few ORMs are actually well equipped to deal with this (when your persistance layer is a relational database).
+As such I'd rather suggest keeping the aggregates separated, and dealing with the relationship logic through a mixture of commands, queries and notifications.
+This is a pragmatic approach to dealing with lackluster persistance, and as such feel free to do things differently if your persistance handles this well or you just like a challenge ;-)
+
+## Command/Query/Notification
+
+I find the C# type `record` works wonderful for these, as none of these should have any logic - they're purely `Data Transfer Objects` (DTO). An example using the `primary constructor` syntax:
+
+```
+public record OrderDeleteCommand(OrderId Id) : IRequest<Order?>;
+```
+
+This `Command` returns the `Aggregate` being deleted, if it was found. Otherwise null.
+Note: I won't go into `class vs. struct` memory allocation concerns here, but you could justify using `record struct` for many `Commands`/`Queries`/`Notifications`.
+
+## Handling Commands
+
+The `CommandHandler` should fetch the `Aggregate(s)` to issue the command onto using the `Repository`. For each `Aggregate` being commanded, the handler then invokes the corresponding method on the `Aggregate`. E.g.
+
+```
+public async Task<Order?> Handle(OrderDeleteCommand command, CancellationToken cancellationToken)
+{
+	var aggregate = await _repository.GetSingleAsync(command.Id, cancellationToken);
+	if (aggregate is null)
+		return null;
+
+	await aggregate.DeleteAsync(command, cancellationToken); // Async to allow validation of relationships using Queries
+	await _repository.SaveAggregateAsync(aggregate, cancellationToken); // Notice how the aggregate still exists after being deleted, the aggregate needs to mutate into a deleted one by itself, and only then can we persist that information
+	return aggregate;
+}
+```
+
+## Handling Queries
+
+The `QueryHandler` is a lot simpler, it won't issue methods on `Aggregates` but rather purely relies on the `Repository` for fetching data based on the queries.
+
+## Handling Notifications
+
+The `NotificationHandler` (if you have one) should not know about a `Repository` at all, rather it should issue new `Commands`/`Queries`/`Notifications` for whatever it wants to do.
+Often `Notifications` are crossing boundaries, and as such we're dealing with `Inter-domain communication`.
+Even when not dealing with `Inter-domain communication` there's nothing wrong with using the already established contracts of our `Commands`/`Queries`/`Notifications` (rather, it's a good thing).
+
+## ValueObjects
+
+`Value Objects` can often benefit from being implemented using `record` as well, because a `Value Object` has no inherent identity, it instead becomes the sum of its parts. The `record` type gives you this functionality for free.
+Furthermore when using `record` with only the `primary constructor` syntax they're also `immutable` - a great perk for thread safety, caching race-conditions and many other scenarios that are otherwise error-prone.
+Our `Location` `Value Object` from earlier could thus be written like this instead:
+
+```
+public record struct Location(decimal Latitude, decimal Longitude);
+```
