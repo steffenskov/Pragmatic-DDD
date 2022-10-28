@@ -14,7 +14,7 @@ If you don't yet know about the process I highly recommend relying on the books 
 An `Aggregate` in DDD consists of an `Aggregate root` as well as `0-n other aggregates`. For simplicity I usually make the `Aggregate` itself its root, rather than nesting the root into it. e.g.
 
 ```
-class Order
+class Order // Is its own root
 {
 	public OrderId Id { get; private set; } // Part of the root
 	public OrderDetails Details { get; private set; } // Part of the root
@@ -25,12 +25,36 @@ class Order
 You could split the root from the `Aggregate` like this instead, but I don't recommend it as you IMHO gain little for the added complexicity:
 
 ```
-class OrderAggregate
+class OrderAggregate // Has nested root
 {
-	public Order Order { get; private set; } // Root as a whole
+	public Order Root { get; private set; } // Root as a whole
 	public IList<OrderLine> OrderLines { get; private set; } // 0-n other aggregates
 }
 ```
+
+Furthermore an `Aggregate` is responsible for maintaining its own business rules and state. As such all data should be privately set, so mutations only can occur via methods on the `Aggregate` that in turn maintains business rules and a valid state.
+To ensure a valid state, the method should validate ALL incoming data before mutating anything. e.g.
+
+```
+class Order
+{
+	public OrderId Id { get; private set; }
+	public OrderDetails Details { get; private set; }
+
+	public static Order Create(OrderId id, OrderDetails details)
+	{
+		ValidateId(id);
+		ValidateDetails(details);
+
+		return new Order { Id = id, Details = details };
+	}
+}
+```
+
+The simplest way to ensure state never becomes invalid, is IMHO to throw an exception in your `ValidateX` methods to stop execution prior to the mutation part.
+When creating a new instance of an `Aggregate` feel free to use a static `Create` method like above, a `constructor` or even an instance method called upon an empty `Aggregate`.
+
+To remember: An aggregate is itself responsible for ensuring its state is always valid according to the business rules.
 
 ## Aggregate root
 
