@@ -59,6 +59,7 @@ To remember: An aggregate is itself responsible for ensuring its state is always
 ## Aggregate root
 
 An `Aggregate root` is an `Entity` (look that one up below, you'll see we come full circle back to `Aggregate`)
+The rules for valid state are the same on the root as on `Aggregate`.
 
 ## Entity
 
