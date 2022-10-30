@@ -1,5 +1,2 @@
-- Onion architecture description
 - Primitive obsession
-- NuGet package list
 - Link to example solution
-- Validation of Value Objects

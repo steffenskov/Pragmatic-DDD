@@ -7,7 +7,7 @@ A pragmatic to-the-point guide for implementing DDD in C#.
 Domain-Driven Design (also known as DDD) is a lot more than just writing code. This guide expects you to already know about the DDD process, and have reached the point of starting to implement software using DDD.
 If you don't yet know about the process I highly recommend relying on the books on the topic, rather than a brief guide like this. It's a rather large topic after all.
 
-# DDD Vocabulary
+# DDD Terminology
 
 ## Aggregate
 
@@ -111,7 +111,7 @@ Food for thought: Should `Latitude` and `Longitude` each be their own `Value Obj
 
 To remember: Use fine granularity with `Value Objects` to gain the most benefit from them. And like `Aggregate` they should maintain a valid state at all times.
 
-# CQRS vocabulary
+# CQRS Terminology
 
 We'll be talking `Command-Query Request Segregation` (CQRS) soon as it works very well with DDD.
 
@@ -119,18 +119,18 @@ We'll be talking `Command-Query Request Segregation` (CQRS) soon as it works ver
 
 A command changes something on one or many `Aggregates`, it either doesn't return anything or just returns whatever `Aggregate(s)` it was issued on.
 This is purely a `Write` operation.
-When using `Mediator` (which I recommend), there must be exactly one `Handler` that deals with the `Command`.
+When using `Mediator` (which I recommend) there must be exactly one `Handler` that deals with the `Command`.
 
 ## Query
 
 A query finds something, it could be one or many `Aggregates`, `ValueObjects`, etc. It never changes anything.
 This is purely a `Read` operation.
-When using `Mediator` (which I recommend), there must be exactly one `Handler` that deals with the `Query`.
+When using `Mediator` there must be exactly one `Handler` that deals with the `Query`.
 
 ## Notification
 
 A notification is a broadcasted information, sent in a "to-whom-it-many-concern" fashion. This is really neither a `Read` nor `Write` operation, but it can lead to both depending on how any `Handlers` choose to deal with it.
-When using `Mediator` (which I recommend), there can be `0-n handlers` for notifications.
+When using `Mediator` there can be `0-n handlers` for notifications.
 
 # Architecture
 
@@ -220,9 +220,9 @@ If you still want to do this, know that it can lead to circular loops in both yo
 
 ## Aggregate
 
-I tend to _not_ include the `0-n other aggregates` on an aggregate. The reason is fairly simple: It complicates persistance and few ORMs are actually well equipped to deal with this (when your persistance layer is a relational database).
+I tend to _not_ include the `0-n other aggregates` on an aggregate. The reason is fairly simple: It complicates persistence and few ORMs are actually well equipped to deal with this (when your persistence layer is a relational database).
 As such I'd rather suggest keeping the aggregates separated, and dealing with the relationship logic through a mixture of commands, queries and notifications.
-This is a pragmatic approach to dealing with lackluster persistance, and as such feel free to do things differently if your persistance handles this well or you just like a challenge ;-)
+This is a pragmatic approach to dealing with lackluster persistence, and as such feel free to do things differently if your persistence handles this well or you just like a challenge ;-)
 
 ## Command/Query/Notification
 
@@ -271,3 +271,68 @@ Our `Location` `Value Object` from earlier could thus be written like this inste
 ```
 public record struct Location(decimal Latitude, decimal Longitude);
 ```
+
+Note: If the `Value Object` is subject to any form of validation rules, the `primary constructor` syntax isn't feasible. Instead either go with validation via constructor, or via setters on the properties. Regardless of the approach, the `record` type is still brilliant for comparison of `Value Objects` and strongly recommended.
+Here are examples of the two approaches:
+
+```
+public record struct Location
+{
+	public decimal Latitude { get; }
+	public decimal Longitude { get; }
+
+	public Location(decimal latitude, decimal longitude)
+	{
+		ValidateLatitude(latitude);
+		ValidateLongitude(longitude);
+		Latitude = latitude;
+		Longitude = longitude;
+	}
+}
+```
+
+```
+public record struct Location
+{
+	private decimal _latitude, _longitude;
+
+	public decimal Latitude
+	{
+		get => _latitude;
+		init
+		{
+			ValidateLatitude(value);
+			_latitude = value;
+		}
+	}
+
+	public decimal Longitude
+	{
+		get => _longitude;
+		init
+		{
+			ValidateLongitude(value);
+			_longitude = value;
+		}
+	}
+}
+```
+
+The latter approach supports `with` statements, like e.g. `Location with { Latitude = 42 }`, whereas the former doesn't. Depending on your use cases, each approach has its own merits and neither is a "wrong" way to go about it.
+
+# NuGet package list
+
+Here are a bunch of NuGet packages I'd recommend using in your application, when implementing DDD:
+
+- [MediatR](https://www.nuget.org/packages/MediatR)
+- [MediatR.Extensions.Microsoft.DependencyInjection](https://www.nuget.org/packages/MediatR.Extensions.Microsoft.DependencyInjection)
+- [StrongTypedId](https://www.nuget.org/packages/StrongTypedId) (this one has further extensions available for e.g. NewtonSoft serialization)
+
+If you're using a relational database for persistence, I further recommend these:
+
+- [Dapper](https://www.nuget.org/packages/Dapper) (If using a relational database)
+- [Dapper.DDD.Repository](https://www.nuget.org/packages/Dapper.DDD.Repository) (An extension framework for Dapper, created by myself - currently supports MS SQL and MariaDB/MySql)
+- [Dapper.DDD.Repository.Sql](https://www.nuget.org/packages/Dapper.DDD.Repository.Sql) (If using MS SQL)
+- [Dapper.DDD.Repository.MySql](https://www.nuget.org/packages/Dapper.DDD.Repository.MySql) (If using MariaDB/MySql)
+- [Dapper.DDD.Repository.DependencyInjection](https://www.nuget.org/packages/Dapper.DDD.Repository.DependencyInjection)
+- [StrongTypedId.Dapper.DDD.Repository](https://www.nuget.org/packages/StrongTypedId.Dapper.DDD.Repository)
