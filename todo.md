@@ -1,2 +1,0 @@
-- Primitive obsession
-- Link to example solution

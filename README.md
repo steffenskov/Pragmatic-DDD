@@ -7,6 +7,8 @@ A pragmatic to-the-point guide for implementing DDD in C#.
 Domain-Driven Design (also known as DDD) is a lot more than just writing code. This guide expects you to already know about the DDD process, and have reached the point of starting to implement software using DDD.
 If you don't yet know about the process I highly recommend relying on the books on the topic, rather than a brief guide like this. It's a rather large topic after all.
 
+Finally here's a link to a sample solution, implementing much of what's described below: [DDD-CQRS-Template](https://github.com/steffenskov/DDD-CQRS-Template). I find it's often beneficial to see the actual code rather than just reading about it.
+
 # DDD Terminology
 
 ## Aggregate
@@ -262,7 +264,18 @@ The `NotificationHandler` (if you have one) should not know about a `Repository`
 Often `Notifications` are crossing boundaries, and as such we're dealing with `Inter-domain communication`.
 Even when not dealing with `Inter-domain communication` there's nothing wrong with using the already established contracts of our `Commands`/`Queries`/`Notifications` (rather, it's a good thing).
 
-## ValueObjects
+## Primitive obsession
+
+[Primitive obsession](Primitive-Obsession.md) should be avoided in DDD where possible (it probably should be avoided in general too).
+With DDD having a focus on using the same terminology across both process and code (What's known as the `Ubiquitous language`), encapsulating all concerns regarding a term is highly encouraged.
+As such don't represent terms that are more than a primitive, as a primitive in code. For instance an `Order number` is "just a number", or is it? `Order numbers` are normally required to be unique, positive integers that fall within an unbroken range.
+That's 3 business rules right there, which an `int` or `uint` doesn't properly capture.
+As such an `OrderNumber` `Value Object` is probably the right way to represent it in your code.
+
+This also extends to the `Id`s of your aggregates. Sure you can just use a `Guid` and call it a day, but in so doing, you lose the differentiation between the `Id` of an `Order` and a `User`, which obviously are two different things.
+To simplify implementation of this I'd recommend using my `StrongTypedId` package. (Check the NuGet list at the bottom of this document for links)
+
+## Value Objects
 
 `Value Objects` can often benefit from being implemented using `record` as well, because a `Value Object` has no inherent identity, it instead becomes the sum of its parts. The `record` type gives you this functionality for free.
 Furthermore when using `record` with only the `primary constructor` syntax they're also `immutable` - a great perk for thread safety, caching race-conditions and many other scenarios that are otherwise error-prone.
