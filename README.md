@@ -137,7 +137,7 @@ When using `Mediator` there can be `0-n handlers` for notifications.
 I like to match DDD with the `CQRS` pattern, as I find the commands make for excellent mutation methods on your `Aggregates`.
 To this end I'd recommend using `Mediator` for implementing `CQRS`, it's great at it and it makes for a very `SOLID` architecture with very low coupling.
 
-Furthermore I'd also suggest implenting the `Onion architecture` in your solution, as this keeps responsibilities clearly seperated between your `Domain` code (where all the business takes place), your `Application` (could be a Web API for instance) and your `Infrastructure` (which often just boils down to persistence).
+Furthermore I'd also suggest implenting the [Onion architecture](Onion-Architecture.md) in your solution, as this keeps responsibilities clearly seperated between your `Domain` code (where all the business takes place), your `Application` (could be a Web API for instance) and your `Infrastructure` (which often just boils down to persistence).
 
 So our basic architecture has 3 projects:
 
