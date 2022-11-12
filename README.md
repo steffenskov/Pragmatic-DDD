@@ -218,6 +218,15 @@ If you find the need to do this, you've put business logic into your `Infrastruc
 This is also known as `North-South communication` and it's basically meant to be a one-way street.
 If you still want to do this, know that it can lead to circular loops in both your dependencies and your logic. Neither is something you want... Ever.
 
+## Cross cutting concerns
+
+Cross cutting concerns cover functionality that applies across your domain, usually it's a `generic domain` or `supporting domain` and as such you're likely to not implement this yourself.
+Common types of cross cutting concerns include: Authentication/Authorization, Caching, Compression, Logging, Encryption, Exception handling and probably a bunch more.
+
+If you're building an API the simple answer to dealing with this is: `Middleware`. This way you can inject the functionality across your entire API in one swoop.
+
+For other types of applications I'd suggesting looking into the `Proxy`/`Decorator` design pattern, as that too enables you to implement the functionality once, and apply it broadly afterwards.
+
 # Implementation details
 
 ## Aggregate
