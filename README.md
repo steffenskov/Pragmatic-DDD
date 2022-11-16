@@ -368,3 +368,7 @@ If you're using a relational database for persistence, I further recommend these
 - [Dapper.DDD.Repository.MySql](https://www.nuget.org/packages/Dapper.DDD.Repository.MySql) (If using MariaDB/MySql)
 - [Dapper.DDD.Repository.DependencyInjection](https://www.nuget.org/packages/Dapper.DDD.Repository.DependencyInjection)
 - [StrongTypedId.Dapper.DDD.Repository](https://www.nuget.org/packages/StrongTypedId.Dapper.DDD.Repository)
+
+# Example solution
+
+I've created an example solution of this architecture, which can be found here: [DDD-CQRS-Template](https://github.com/steffenskov/DDD-CQRS-Template)
