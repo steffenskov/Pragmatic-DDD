@@ -9,6 +9,14 @@ If you don't yet know about the process I highly recommend relying on the books 
 
 Finally here's a link to a sample solution, implementing much of what's described below: [DDD-CQRS-Template](https://github.com/steffenskov/DDD-CQRS-Template). I find it's often beneficial to see the actual code rather than just reading about it.
 
+# Prerequisites for reading
+
+In order to gain the most benefit from this, you should be familiar with the following concepts:
+
+- [CQRS](https://en.wikipedia.org/wiki/Command%E2%80%93query_separation)
+- [Onion Architecture](https://en.everybodywiki.com/Onion_Architecture)
+- [MediatR / mediator pattern](https://github.com/jbogard/MediatR/wiki) (note: Mediator pattern isn't strictly necessary, however it provides a very nice decoupling, that makes following the [Open/Closed principle](https://en.wikipedia.org/wiki/Open%E2%80%93closed_principle) a lot easier)
+
 # DDD Terminology
 
 ## Aggregate
