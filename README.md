@@ -15,7 +15,9 @@ In order to gain the most benefit from this, you should be familiar with the fol
 
 - [CQRS](https://en.wikipedia.org/wiki/Command%E2%80%93query_separation)
 - [Onion Architecture](https://en.everybodywiki.com/Onion_Architecture)
-- [MediatR / mediator pattern](https://github.com/jbogard/MediatR/wiki) (note: Mediator pattern isn't strictly necessary, however it provides a very nice decoupling, that makes following the [Open/Closed principle](https://en.wikipedia.org/wiki/Open%E2%80%93closed_principle) a lot easier)
+- [MediatR / mediator pattern](https://github.com/jbogard/MediatR/wiki)
+
+Note: CQRS and Mediator pattern aren't strictly necessary, however they provide a very nice decoupling, which makes following the [Open/Closed principle](https://en.wikipedia.org/wiki/Open%E2%80%93closed_principle) a lot easier.
 
 # DDD Terminology
 
