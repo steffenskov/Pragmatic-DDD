@@ -71,7 +71,7 @@ class Order
 ```
 
 The simplest way to ensure state never becomes invalid, is IMHO to throw an exception in your `ValidateX` methods to stop execution prior to the mutation part.
-When creating a new instance of an `Aggregate` feel free to use a static `Create` method like above, a `constructor` or even an instance method called upon an empty `Aggregate`.
+When creating a new instance of an `Aggregate` feel free to use a static `Create` method like above, a `Constructor` or even an instance method called upon an empty `Aggregate`.
 
 To remember: An aggregate is itself responsible for ensuring its state is always valid according to the business rules.
 
@@ -255,7 +255,7 @@ public record OrderDeleteCommand(OrderId Id) : IRequest<Order?>;
 ```
 
 This `Command` returns the `Aggregate` being deleted, if it was found. Otherwise null.
-Note: I won't go into `class vs. struct` memory allocation concerns here, but you could justify using `record struct` for many `Commands`/`Queries`/`Notifications`.
+Note: I won't go into `Class vs. struct` memory allocation concerns here, but you could justify using `record struct` for many `Commands`/`Queries`/`Notifications`.
 
 ## Handling Commands
 
@@ -352,6 +352,21 @@ public record struct Location
 ```
 
 The latter approach supports `with` statements, like e.g. `Location with { Latitude = 42 }`, whereas the former doesn't. Depending on your use cases, each approach has its own merits and neither is a "wrong" way to go about it.
+
+# Unit- and Integration testing
+Using the approach shown above makes answering the "what do I test?" question rather simple, as it pretty much boils down to this: Test your Commands and Queries, and you'll automatically hit all the architecture as well.
+
+I like to split it into two separate projects:
+
+## Unit testing
+- All your `Commands`, using mocks as necessary to hit all `validation exceptions` the `aggregates` can throw in response to a `Command`, as well as hitting the "happy path" where no exceptions are thrown.
+  - *Maybe* do edge-case testing of your `Commands`, e.g. if a `Command` accepts a `string`, you could consider testing it with `null`, `string.Empty`, white space, an extremely long string, emojis or other unicode related characters, and so forth. Do be warned though that this can be extremely time consuming. As such you need to weigh the cost against the expected benefit in your particular project.
+- Any services that don't rely on `CQRS`, again use mocks as necessary to hit all execution paths
+
+## Integration testing
+- All your `Commands`, using just the "happy path" and verifying data is in fact persisted correctly
+- All your `Queries`, using dummy data you either seed your database with prior to starting the test suite, OR seeding the database as-you-go. Verifying the `Queries` return what you expect (and nothing more...)
+
 
 # NuGet package list
 
