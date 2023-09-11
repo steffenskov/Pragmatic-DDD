@@ -78,11 +78,11 @@ To remember: An aggregate is itself responsible for ensuring its state is always
 ## Aggregate root
 
 An `Aggregate root` is an `Entity` (look that one up below, you'll see we come full circle back to `Aggregate`)
-The rules for valid state are the same on the root as on `Aggregate`.
+The rules for having a valid state are the same on the root as on `Aggregate`.
 
 ## Entity
 
-An `Entity` is a combination of data that has an inherit identity. Typically in a relational database, an `Entity` represents a single row in a table with a primary key. As such this is an entity:
+An `Entity` is a combination of data that has an inherent identity. Typically in a relational database, an `Entity` represents a single row in a table with a primary key. As such this is an entity:
 
 ```
 class Order
@@ -93,7 +93,7 @@ class Order
 ```
 
 Notice how an `Aggregate` always has an `Aggregate root` and _may_ also have other aggregates. Since an `Aggregate root` _is_ an `Entity` you can simplify the language around these concepts if you merged the root into the `Aggregate` itself like suggested above.
-This essentially means you completely ignore the term `Entity` and just call all of it an `Aggregate`. This is very much subject for debate, but I find it eases the communication in a team and I haven't really missed the `Entity` term. The primary thing here is probably making a choice and sticking to it, to avoid confusion in your teams.
+This essentially means you completely ignore the term `Entity` and just call all of it an `Aggregate`. This is very much a subject for debate, but I find it eases the communication in a team and I haven't really missed the `Entity` term. The primary thing here is probably making a choice and sticking to it, to avoid confusion in your teams.
 
 To remember: Just call it an `Aggregate` ;-)
 
@@ -117,7 +117,7 @@ struct TemperatureCelcius
 ```
 
 As you can see a Value Object can encapsulate multiple parts, that becomes a bigger whole. Or simply "wrap" a primitive value, because there's some inherent meaning to the concept that would otherwise be missed.
-Any business rules regarding value objects should be implemented on the `Value Object` itself, to ensure it's never brought to an invalid state. For instance our `TemperatureCelcius` `Value Object` above should ensure its `Value` never dips below absolute zero, because that's an invalid/impossible temperature. Likewise there's a valid range of values for both `Latitude` and `Longitude` that Location should adhere too.
+Any business rules regarding value objects should be implemented on the `Value Object` itself, to ensure it's never brought to an invalid state. For instance our `TemperatureCelcius` `Value Object` above should ensure its `Value` never dips below absolute zero, because that's an invalid/impossible temperature. Likewise there's a valid range of values for both `Latitude` and `Longitude` that `Location` should adhere to too.
 
 Food for thought: Should `Latitude` and `Longitude` each be their own `Value Objects` with their own rules for ensure a valid value, which are then further encapsulated into `Location`? YMMV here, but I'd actually say "yes".
 
@@ -125,7 +125,7 @@ To remember: Use fine granularity with `Value Objects` to gain the most benefit 
 
 # CQRS Terminology
 
-We'll be talking `Command-Query Request Segregation` (CQRS) soon as it works very well with DDD.
+We'll be talking `Command Query Responsibility Segregation` (CQRS) soon as it works very well with DDD.
 
 ## Command
 
@@ -149,7 +149,7 @@ When using `Mediator` there can be `0-n handlers` for notifications.
 I like to match DDD with the `CQRS` pattern, as I find the commands make for excellent mutation methods on your `Aggregates`.
 To this end I'd recommend using `Mediator` for implementing `CQRS`, it's great at it and it makes for a very `SOLID` architecture with very low coupling.
 
-Furthermore I'd also suggest implenting the [Onion architecture](Onion-Architecture.md) in your solution, as this keeps responsibilities clearly seperated between your `Domain` code (where all the business takes place), your `Application` (could be a Web API for instance) and your `Infrastructure` (which often just boils down to persistence).
+Furthermore I'd also suggest implementing the [Onion architecture](Onion-Architecture.md) in your solution, as this keeps responsibilities clearly seperated between your `Domain` code (where all the business takes place), your `Application` (could be a Web API for instance) and your `Infrastructure` (which often just boils down to persistence).
 
 So our basic architecture has 3 projects:
 
@@ -170,46 +170,52 @@ Now for the actual structure of the `Sale` namespace I suggest the following (fe
 
 - Domain
   - Sale
-    - Aggregates
-    - Commands
-    - Queries
-    - Repositories
-    - ValueObjects
+    - Order
+	  - Commands
+	  - Queries
+	  - Repositories
+	  - ValueObjects
+	- OrderLine
+	  - Commands
+	  - Queries
+	  - Repositories
+	  - ValueObjects
 
 Supposing we're doing basic CRUD for `Order` and `Orderline` (and keeping the two as separate `Aggregates` - see below why), the final structure could look like this:
 
 - Domain
   - Sale
-    - Aggregates
-      - Order.cs
-      - Orderline.cs
-    - Commands
-      - Order
-        - OrderCommandHandler.cs
+    - Order
+	  - Order.cs
+	  - Commands
+  		- OrderCommandHandler.cs
         - OrderCreateCommand.cs
         - OrderDeleteCommand.cs
         - OrderUpdateCommand.cs
-      - Orderline
+	  - Queries
+        - OrderGetAllQuery.cs
+        - OrderGetSingleQuery.cs
+	  - Repositories
+        - IOrderRepository.cs // Interface
+      - ValueObjects
+	    - OrderId.cs
+		- OrderDetails.cs
+	- OrderLine
+	  - Orderline.cs
+      - Commands
         - OrderlineCommandHandler.cs
         - OrderlineCreateCommand.cs
         - OrderlineDeleteCommand.cs
         - OrderlineUpdateCommand.cs
-    - Queries
-      - Order
-        - OrderGetAllQuery.cs
-        - OrderGetSingleQuery.cs
-      - Orderline
+      - Queries
         - OrderlineGetAllQuery.cs
         - OrderlineGetSingleQuery.cs
-    - Repositories
-      - IOrderRepository.cs // Interface
-      - IOrderlineRepository.cs // Interface
-    - ValueObjects
-      - OrderDetails.cs
-      - OrderId.cs
-      - OrderlineId.cs
+      - Repositories
+        - IOrderlineRepository.cs // Interface
+      - ValueObjects
+        - OrderlineId.cs
 
-Note: You'll rarely have just an `UpdateCommand`, rather you'd have specific mutational commands that adhere to the product specific workflows. It could be a `ShipOrderCommand`, `RefundOrderCommand` etc.
+Note: You might rarely have just an `UpdateCommand`, rather you'd have specific mutational commands that adhere to the product specific workflows. It could be a `ShipOrderCommand`, `RefundOrderCommand` etc.
 
 Note: The repositories are `interfaces`, it's the `Infrastructure` project that's in charge of their actual implementations as per the `Onion architecture`.
 
@@ -225,37 +231,41 @@ In fact when using `Mediator` the same approach can be used even when crossing `
 
 This one is pretty simple: Your `Infrastructure` _NEVER_ calls your `Domain`. Period.
 If you find the need to do this, you've put business logic into your `Infrastructure`, which should instead be dealt with in your `Domain`. (where inter-domain communication is allowed as just discussed)
-This is also known as `North-South communication` and it's basically meant to be a one-way street.
+This is also known as `North-South communication` and it's basically meant to be a one-way street. (`Domain` -> `Infrastructure`)
 If you still want to do this, know that it can lead to circular loops in both your dependencies and your logic. Neither is something you want... Ever.
 
 ## Cross cutting concerns
 
 Cross cutting concerns cover functionality that applies across your domain, usually it's a `generic domain` or `supporting domain` and as such you're likely to not implement this yourself.
-Common types of cross cutting concerns include: Authentication/Authorization, Caching, Compression, Logging, Encryption, Exception handling and probably a bunch more.
+Common types of cross cutting concerns include: Authentication/Authorization, Caching, Compression, Logging, Encryption, Exception handling and a bunch more.
 
 If you're building an API the simple answer to dealing with this is mainly `Middleware`. This way you can inject the functionality across your entire API in one swoop.
 
-For other types of applications or API concerns where `Middleware` doesn't cut it, I'd suggesting looking into the `Proxy`/`Decorator` design pattern.
+Another option, if you're using `MediatR` is to use `Behavior`s - these work rougly like `Middleware` except for all your `MediatR` `Commands/Queries`.
+
+If neither of these solutions are applicable to your needs, I'd suggesting looking into the `Proxy`/`Decorator` design pattern.
 This too enables you to implement the functionality once, and apply it broadly afterwards.
 
 # Implementation details
 
 ## Aggregate
 
-I tend to _not_ include the `0-n other aggregates` on an aggregate. The reason is fairly simple: It complicates persistence and few ORMs are actually well equipped to deal with this (when your persistence layer is a relational database).
-As such I'd rather suggest keeping the aggregates separated, and dealing with the relationship logic through a mixture of commands, queries and notifications.
+I tend to _not_ include the `0-n other aggregates` on an aggregate when your persistence layer is a relational database. The reason is fairly simple: It complicates persistence as few ORMs are actually well equipped to deal with this.
+In these situations I'd rather suggest keeping the aggregates separated, and dealing with the relationship logic through a mixture of commands, queries and notifications.
 This is a pragmatic approach to dealing with lackluster persistence, and as such feel free to do things differently if your persistence handles this well or you just like a challenge ;-)
+
+For document databases I'd suggest modelling your data in accordance with your querying needs to optimize DB performance, then model the Aggregate to reflect this.
 
 ## Command/Query/Notification
 
-I find the C# type `record` works wonderful for these, as none of these should have any logic - they're purely `Data Transfer Objects` (DTO). An example using the `primary constructor` syntax:
+I find the C# type `record` works wonderful for these, partly because `Commands`/`Queries`/`Notifications` seldom have much logic, partly because they should (mainly) be immutable. An example using the `primary constructor` syntax:
 
 ```
 public record OrderDeleteCommand(OrderId Id) : IRequest<Order?>;
 ```
 
 This `Command` returns the `Aggregate` being deleted, if it was found. Otherwise null.
-Note: I won't go into `Class vs. struct` memory allocation concerns here, but you could justify using `record struct` for many `Commands`/`Queries`/`Notifications`.
+Note: I won't go into `Class vs. struct` memory allocation concerns here, but you could easily justify using `record struct` for many `Commands`/`Queries`/`Notifications`.
 
 ## Handling Commands
 
@@ -292,7 +302,7 @@ As such don't represent terms that are more than a primitive, as a primitive in 
 That's 3 business rules right there, which an `int` or `uint` doesn't properly capture.
 As such an `OrderNumber` `Value Object` is probably the right way to represent it in your code.
 
-This also extends to the `Id`s of your aggregates. Sure you can just use a `Guid` and call it a day, but in so doing, you lose the differentiation between the `Id` of an `Order` and a `User`, which obviously are two different things.
+This also extends to the `Id`s of your aggregates. Sure you can just use a `Guid` and call it a day, but in doing so, you lose the differentiation between the `Id` of an `Order` and a `User`, which obviously are two different things.
 To simplify implementation of this I'd recommend using my `StrongTypedId` package. (Check the NuGet list at the bottom of this document for links)
 
 ## Value Objects
@@ -354,13 +364,14 @@ public record struct Location
 The latter approach supports `with` statements, like e.g. `Location with { Latitude = 42 }`, whereas the former doesn't. Depending on your use cases, each approach has its own merits and neither is a "wrong" way to go about it.
 
 # Unit- and Integration testing
-Using the approach shown above makes answering the "what do I test?" question rather simple, as it pretty much boils down to this: Test your Commands and Queries, and you'll automatically hit all the architecture as well.
+Using the approach shown above makes answering the "what do I test?" question rather simple, as it pretty much boils down to this: Test your `Commands`, `Queries` and `ValueObjects`, and you'll automatically hit all the architecture as well.
 
 I like to split it into two separate projects:
 
 ## Unit testing
 - All your `Commands`, using mocks as necessary to hit all `validation exceptions` the `aggregates` can throw in response to a `Command`, as well as hitting the "happy path" where no exceptions are thrown.
   - *Maybe* do edge-case testing of your `Commands`, e.g. if a `Command` accepts a `string`, you could consider testing it with `null`, `string.Empty`, white space, an extremely long string, emojis or other unicode related characters, and so forth. Do be warned though that this can be extremely time consuming. As such you need to weigh the cost against the expected benefit in your particular project.
+- All your `ValueObjects`, again hitting the `validation exceptions` as well as the "happy path". Mocking generally shouldn't be necessary here.
 - Any services that don't rely on `CQRS`, again use mocks as necessary to hit all execution paths
 
 ## Integration testing
@@ -385,6 +396,8 @@ If you're using a relational database for persistence, I further recommend these
 - [Dapper.DDD.Repository.DependencyInjection](https://www.nuget.org/packages/Dapper.DDD.Repository.DependencyInjection)
 - [StrongTypedId.Dapper.DDD.Repository](https://www.nuget.org/packages/StrongTypedId.Dapper.DDD.Repository)
 
-# Example solution
+# Example solutions
 
 I've created an example solution of this architecture, which can be found here: [DDD-CQRS-Template](https://github.com/steffenskov/DDD-CQRS-Template)
+
+If you want to do `Event sourcing` as well (a topic for another day), I have an example solution for that as well: [DDD-CQRS-EventSourcing-Template](https://github.com/steffenskov/DDD-CQRS-EventSourcing-Template)
