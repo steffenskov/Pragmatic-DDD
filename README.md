@@ -376,6 +376,7 @@ I like to split it into two separate projects:
 
 ## Integration testing
 - All your `Commands`, using just the "happy path" and verifying data is in fact persisted correctly
+- All your `CommandHandlers`, testing how they deal with e.g. ids for aggregates that don't exist
 - All your `Queries`, using dummy data you either seed your database with prior to starting the test suite, OR seeding the database as-you-go. Verifying the `Queries` return what you expect (and nothing more...)
 
 
