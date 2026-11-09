@@ -15,7 +15,7 @@ In order to gain the most benefit from this, you should be familiar with the fol
 
 - [CQRS](https://en.wikipedia.org/wiki/Command%E2%80%93query_separation)
 - [Onion Architecture](https://en.everybodywiki.com/Onion_Architecture)
-- [MediatR / mediator pattern](https://github.com/jbogard/MediatR/wiki)
+- [FreeMediator / mediator pattern](https://www.nuget.org/packages/FreeMediator)
 
 Note: CQRS and Mediator pattern aren't strictly necessary, however they provide a very nice decoupling, which makes following the [Open/Closed principle](https://en.wikipedia.org/wiki/Open%E2%80%93closed_principle) a lot easier.
 
@@ -241,7 +241,7 @@ Common types of cross cutting concerns include: Authentication/Authorization, Ca
 
 If you're building an API the simple answer to dealing with this is mainly `Middleware`. This way you can inject the functionality across your entire API in one swoop.
 
-Another option, if you're using `MediatR` is to use `Behavior`s - these work rougly like `Middleware` except for all your `MediatR` `Commands/Queries`.
+Another option, if you're using `FreeMediator` is to use `Behavior`s - these work rougly like `Middleware` except for all your `Mediator` `Commands/Queries`.
 
 If neither of these solutions are applicable to your needs, I'd suggesting looking into the `Proxy`/`Decorator` design pattern.
 This too enables you to implement the functionality once, and apply it broadly afterwards.
@@ -384,8 +384,7 @@ I like to split it into two separate projects:
 
 Here are a bunch of NuGet packages I'd recommend using in your application, when implementing DDD:
 
-- [MediatR](https://www.nuget.org/packages/MediatR)
-- [MediatR.Extensions.Microsoft.DependencyInjection](https://www.nuget.org/packages/MediatR.Extensions.Microsoft.DependencyInjection)
+- [FreeMediator](https://www.nuget.org/packages/FreeMediator)
 - [StrongTypedId](https://www.nuget.org/packages/StrongTypedId) (this one has further extensions available for e.g. NewtonSoft serialization)
 
 If you're using a relational database for persistence, I further recommend these:
